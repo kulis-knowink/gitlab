@@ -1,0 +1,76 @@
+.npm_build:
+    image: node:14
+    script: |
+      npm install
+      npm build
+    artifacts:
+      paths:
+        - ./build
+
+npm_dev:
+  extends: .npm_build
+  stage: build
+  before_script:
+    - export APP_ENV="dev"
+  only:
+    refs:
+      - dev
+
+npm_stage:
+  extends: .npm_build
+  stage: build
+  before_script:
+    - export APP_ENV="stage"
+  only:
+    refs:
+      - stage
+
+npm_prod:
+  extends: .npm_build
+  stage: build
+  before_script:
+    - export APP_ENV="prod"
+  only:
+    refs::
+      - prod
+
+
+.deploy_aws:
+  image: python:latest
+  when: manual
+  script: |
+    pip install awscli
+    aws s3 sync ./build/ s3:${S3_BUCKET}
+
+deploy_dev:
+  extends: .deploy_aws
+  stage: run
+  dependencies:
+    - npm_dev
+  before_script:
+    - export S3_BUCKET=${BUCKET_DEV}
+  only:
+    refs:
+      - dev
+
+deploy_stage:
+  extends: .deploy_aws
+  stage: run
+  dependencies:
+    - npm_stage
+  before_script:
+    - export S3_BUCKET=${BUCKET_STAGE}
+  only:
+    refs:
+      - stage
+
+deploy_prod:
+  extends: .deploy_aws
+  stage: run
+  dependencies:
+    - npm_prod
+  before_script:
+    - export S3_BUCKET=${BUCKET_PROD}
+  only:
+    refs:
+      - prod
