@@ -8,7 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: contains(github.ref, "dev")
     steps:
       - name: Extract branch name
         shell: bash
